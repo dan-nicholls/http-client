@@ -16,10 +16,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
             with conn:
                 print("Connected by", addr)
-                conn.sendall(b"This is a message from the server")
-
                 data = conn.recv(1024)
-                print(f"Recieved ({addr}):", repr(data))
+                print(f"Request ({addr}):", repr(data))
+                conn.sendall(b"This is a server response")
                 conn.close()
     finally:
         s.close()
