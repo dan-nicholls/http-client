@@ -1,4 +1,6 @@
 import socket
+import threading
+import time
 
 HOST = socket.gethostname()
 PORT = 9000
@@ -10,16 +12,30 @@ class MyClient:
         self.port = port
 
     def send_request(self):
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        # socket is implicitly closed by socket.socket.__exit__
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
                 s.connect((HOST, PORT))
-                s.sendall(b"This is a client request")
+                # time.sleep(5)
+                s.sendall(b"GET This is a client request")
                 data = s.recv(1024)
                 print("Response:", repr(data))
-        finally:
-            s.close()
+            except socket.error as e:
+                print(f"Connection error: {e}")
 
 
 if __name__ == "__main__":
-    client = MyClient(HOST, PORT)
-    client.send_request()
+
+    def create_client_and_send_request():
+        client = MyClient(HOST, PORT)
+        client.send_request()
+
+    threads = []
+
+    for _ in range(1):
+        thread = threading.Thread(target=create_client_and_send_request)
+        thread.start()
+        threads.append(thread)
+
+    for thread in threads:
+        thread.join()
