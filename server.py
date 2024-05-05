@@ -1,7 +1,16 @@
 import socket
+import threading
 
 HOST = socket.gethostname()
 PORT = 9000
+
+
+def handle_client_connection(client_sock):
+    data = client_sock.recv(1024)
+    print("Request:", repr(data))
+    client_sock.sendall(b"This is a server response")
+    client_sock.close()
+
 
 # 4. Accept connections in a loop
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -12,14 +21,12 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
     try:
         while True:
-            conn, addr = s.accept()
-
-            with conn:
-                print("Connected by", addr)
-                data = conn.recv(1024)
-                print(f"Request ({addr}):", repr(data))
-                conn.sendall(b"This is a server response")
-                conn.close()
+            client_sock, addr = s.accept()
+            print("Accpeted connection to ", addr)
+            client_handler = threading.Thread(
+                target=handle_client_connection, args=(client_sock,)
+            )
+            client_handler.start()
     finally:
         s.close()
         print("Server closed")
