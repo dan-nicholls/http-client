@@ -1,10 +1,18 @@
+from os import walk
 import socket
 import threading
 import time
+from typing import Tuple
 
 HOST = socket.gethostname()
 PORT = 9000
 MAX_CONNECTIONS = 2
+ENCODING_FORMAT = "utf-8"
+
+
+class RequestError(Exception):
+    def __init__(self, message="Invalid request"):
+        super().__init__(message)
 
 
 class MyServer:
@@ -14,13 +22,38 @@ class MyServer:
         self.active_connections = 0
         self.max_connections_reached = 0
 
+    @staticmethod
+    def parse_request(data: str) -> Tuple[str, str]:
+        parts = data.split()
+        if len(parts) != 2:
+            raise RequestError()
+
+        method = parts[0]
+        resource = parts[1]
+
+        return method, resource
+
+    @staticmethod
+    def validate_request(method: str, resource: str) -> None:
+        if method != "GET":
+            raise RequestError("Invalid request type")
+
+        if not resource.startswith("/"):
+            raise RequestError("Invalid resource")
+
     def handle_client_connection(self, client_sock: socket.socket):
-        data = client_sock.recv(1024)
-        print("Request:", repr(data))
-        if data.startswith(b"GET"):
-            client_sock.sendall(b"This is a server response")
-        else:
-            client_sock.sendall(b"Invalid request")
+        data = client_sock.recv(1024).decode(ENCODING_FORMAT)
+        print(f"Request: {data}")
+
+        try:
+            method, resource = MyServer.parse_request(data)
+            MyServer.validate_request(method, resource)
+            client_sock.sendall("This is a server response".encode(ENCODING_FORMAT))
+        except Exception as e:
+            print(f"Bad Request: {e}")
+            error_message = str(e).encode(ENCODING_FORMAT)
+            client_sock.sendall(error_message)
+
         client_sock.close()
         self.active_connections -= 1
         if self.active_connections < MAX_CONNECTIONS:
