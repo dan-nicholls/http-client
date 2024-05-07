@@ -17,7 +17,7 @@ class MyClient:
             try:
                 s.connect((HOST, PORT))
                 # time.sleep(5)
-                s.sendall(b"GET This is a client request")
+                s.sendall(b"GET /")
                 data = s.recv(1024)
                 print("Response:", repr(data))
             except socket.error as e:

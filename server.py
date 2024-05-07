@@ -3,6 +3,7 @@ import socket
 import threading
 import time
 from typing import Tuple
+import os.path
 
 HOST = socket.gethostname()
 PORT = 9000
@@ -16,11 +17,12 @@ class RequestError(Exception):
 
 
 class MyServer:
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, directory: str = "."):
         self.host = host
         self.port = port
         self.active_connections = 0
         self.max_connections_reached = 0
+        self.directory = directory
 
     @staticmethod
     def parse_request(data: str) -> Tuple[str, str]:
@@ -41,6 +43,17 @@ class MyServer:
         if not resource.startswith("/"):
             raise RequestError("Invalid resource")
 
+    def get_resource(self, resource: str) -> str:
+        filepath = self.directory + resource
+        print(filepath)
+        if os.path.isdir(filepath):
+            filepath = filepath + "/index.html"
+        if not os.path.exists(filepath):
+            raise RequestError("Resource not found")
+
+        with open(filepath, "r", encoding=ENCODING_FORMAT) as file:
+            return file.read()
+
     def handle_client_connection(self, client_sock: socket.socket):
         data = client_sock.recv(1024).decode(ENCODING_FORMAT)
         print(f"Request: {data}")
@@ -48,7 +61,9 @@ class MyServer:
         try:
             method, resource = MyServer.parse_request(data)
             MyServer.validate_request(method, resource)
-            client_sock.sendall("This is a server response".encode(ENCODING_FORMAT))
+            message = self.get_resource(resource)
+            # client_sock.sendall("This is a server response".encode(ENCODING_FORMAT))
+            client_sock.sendall(message.encode(ENCODING_FORMAT))
         except Exception as e:
             print(f"Bad Request: {e}")
             error_message = str(e).encode(ENCODING_FORMAT)
@@ -83,5 +98,5 @@ class MyServer:
 
 
 if __name__ == "__main__":
-    server = MyServer(HOST, PORT)
+    server = MyServer(HOST, PORT, "./examples")
     server.start()
