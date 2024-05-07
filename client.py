@@ -56,6 +56,13 @@ def parse_args():
         metavar="[1-65535]",
         help="The port to connect on (default: 9000)",
     )
+    parser.add_argument(
+        "-n",
+        "--num",
+        type=int,
+        default=1,
+        help="Number of request threads to instantiate",
+    )
 
     return parser.parse_args()
 
@@ -69,7 +76,7 @@ if __name__ == "__main__":
 
     threads = []
 
-    for _ in range(1):
+    for _ in range(args.num):
         thread = threading.Thread(target=create_client_and_send_request)
         thread.start()
         threads.append(thread)
