@@ -98,7 +98,7 @@ class MyServer:
                     time.sleep(1)
 
 
-if __name__ == "__main__":
+def parse_args():
     parser = argparse.ArgumentParser(
         prog="server", description="A simple HTTP server", usage="%(prog)s [options]"
     )
@@ -142,7 +142,11 @@ if __name__ == "__main__":
         help="Show the HTTP server version number",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_args()
 
     server = MyServer(args.host, args.port, args.directory)
     server.start()
