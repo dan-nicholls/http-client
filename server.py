@@ -4,6 +4,7 @@ import threading
 import time
 from typing import Tuple
 import os.path
+import argparse
 
 HOST = socket.gethostname()
 PORT = 9000
@@ -98,5 +99,38 @@ class MyServer:
 
 
 if __name__ == "__main__":
-    server = MyServer(HOST, PORT, "./examples")
+    parser = argparse.ArgumentParser(
+        prog="server", description="A simple HTTP server", usage="%(prog)s [options]"
+    )
+    parser.add_argument(
+        "-H",
+        "--host",
+        type=str,
+        default=socket.gethostname(),
+        help="Set the host on which to listen (default: current hostname)",
+    )
+    parser.add_argument(
+        "-p",
+        "--port",
+        type=int,
+        default=9000,
+        help="Set the port on which the server listens (dfeault: 9000)",
+    )
+    parser.add_argument(
+        "--max_conn",
+        type=int,
+        default=2,
+        help="Set the maximum number of concurrent connections (default: 2)",
+    )
+    parser.add_argument(
+        "-d",
+        "--directory",
+        type=str,
+        default=".",
+        help="Set the directory on which to server files (default: current directory)",
+    )
+
+    args = parser.parse_args()
+
+    server = MyServer(args.host, args.port, args.directory)
     server.start()
