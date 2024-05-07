@@ -102,32 +102,44 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="server", description="A simple HTTP server", usage="%(prog)s [options]"
     )
-    parser.add_argument(
+
+    server_config = parser.add_argument_group("Server Configuration")
+    server_config.add_argument(
         "-H",
         "--host",
         type=str,
         default=socket.gethostname(),
         help="Set the host on which to listen (default: current hostname)",
     )
-    parser.add_argument(
+    server_config.add_argument(
         "-p",
         "--port",
         type=int,
         default=9000,
+        choices=range(1, 65536),
+        metavar="[1-65535]",
         help="Set the port on which the server listens (dfeault: 9000)",
     )
-    parser.add_argument(
+    server_config.add_argument(
         "--max_conn",
         type=int,
         default=2,
         help="Set the maximum number of concurrent connections (default: 2)",
     )
-    parser.add_argument(
+    server_config.add_argument(
         "-d",
         "--directory",
         type=str,
         default=".",
         help="Set the directory on which to server files (default: current directory)",
+    )
+
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version="%(prog)s 0.9",
+        help="Show the HTTP server version number",
     )
 
     args = parser.parse_args()
