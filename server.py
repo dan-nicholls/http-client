@@ -118,7 +118,7 @@ def parse_args():
         default=9000,
         choices=range(1, 65536),
         metavar="[1-65535]",
-        help="Set the port on which the server listens (dfeault: 9000)",
+        help="Set the port on which the server listens (default: 9000)",
     )
     server_config.add_argument(
         "--max_conn",
