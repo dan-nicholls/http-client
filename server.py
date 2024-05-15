@@ -1,7 +1,7 @@
 import socket
-import threading
 import time
-from typing import Tuple
+from threading import Event, Thread
+from typing import Tuple, List
 import os.path
 import argparse
 import signal
@@ -21,12 +21,12 @@ class MyServer:
     def __init__(self, host: str, port: int, directory: str = "."):
         self.host = host
         self.port = port
-        self.client_threads = []
+        self.client_threads: List[Thread] = []
         self.max_connections_reached = False
         self.directory = directory
 
         # Set Event for closing the server
-        self.shutdown_flag = threading.Event()
+        self.shutdown_flag = Event()
         signal.signal(signal.SIGINT, self.shutdown_handler)
         signal.signal(signal.SIGTERM, self.shutdown_handler)
 
@@ -93,7 +93,7 @@ class MyServer:
                 try:
                     client_sock, address = s.accept()
                     print("Accepted connection to ", address)
-                    client_handler = threading.Thread(
+                    client_handler = Thread(
                         target=self.handle_client_connection, args=(client_sock,)
                     )
                     self.client_threads.append(client_handler)
