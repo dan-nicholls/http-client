@@ -87,7 +87,7 @@ class MyServer:
             s.listen(MAX_CONNECTIONS)
             s.settimeout(1.0)
 
-            print(f"Listening on {socket.gethostname()}")
+            print(f"Listening on {self.host}:{self.port}")
 
             while not self.shutdown_flag.is_set():
                 try:
