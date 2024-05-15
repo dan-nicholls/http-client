@@ -43,7 +43,7 @@ class MyServer:
         if not resource.startswith("/"):
             raise RequestError("Invalid resource")
 
-    def get_resource(self, resource: str) -> str:
+    def get_resource(self, resource: str) -> bytes:
         filepath = self.directory + resource
         print(filepath)
         if os.path.isdir(filepath):
@@ -51,7 +51,7 @@ class MyServer:
         if not os.path.exists(filepath):
             raise RequestError("Resource not found")
 
-        with open(filepath, "r", encoding=ENCODING_FORMAT) as file:
+        with open(filepath, "rb") as file:
             return file.read()
 
     def handle_client_connection(self, client_sock: socket.socket):
@@ -63,7 +63,7 @@ class MyServer:
             MyServer.validate_request(method, resource)
             message = self.get_resource(resource)
             # client_sock.sendall("This is a server response".encode(ENCODING_FORMAT))
-            client_sock.sendall(message.encode(ENCODING_FORMAT))
+            client_sock.sendall(message)
         except Exception as e:
             print(f"Bad Request: {e}")
             error_message = str(e).encode(ENCODING_FORMAT)
