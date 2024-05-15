@@ -4,6 +4,7 @@ import time
 from typing import Tuple
 import os.path
 import argparse
+import signal
 
 HOST = socket.gethostname()
 PORT = 9000
@@ -20,9 +21,18 @@ class MyServer:
     def __init__(self, host: str, port: int, directory: str = "."):
         self.host = host
         self.port = port
-        self.active_connections = 0
-        self.max_connections_reached = 0
+        self.client_threads = []
+        self.max_connections_reached = False
         self.directory = directory
+
+        # Set Event for closing the server
+        self.shutdown_flag = threading.Event()
+        signal.signal(signal.SIGINT, self.shutdown_handler)
+        signal.signal(signal.SIGTERM, self.shutdown_handler)
+
+    def shutdown_handler(self, signum, frame):
+        print("Shutting down server")
+        self.shutdown_flag.set()
 
     @staticmethod
     def parse_request(data: str) -> Tuple[str, str]:
@@ -55,46 +65,50 @@ class MyServer:
             return file.read()
 
     def handle_client_connection(self, client_sock: socket.socket):
-        data = client_sock.recv(1024).decode(ENCODING_FORMAT)
-        print(f"Request: {data}")
-
         try:
+            data = client_sock.recv(1024).decode(ENCODING_FORMAT)
+            print(f"Request: {data}")
+
             method, resource = MyServer.parse_request(data)
             MyServer.validate_request(method, resource)
             message = self.get_resource(resource)
-            # client_sock.sendall("This is a server response".encode(ENCODING_FORMAT))
             client_sock.sendall(message)
         except Exception as e:
             print(f"Bad Request: {e}")
             error_message = str(e).encode(ENCODING_FORMAT)
             client_sock.sendall(error_message)
-
-        client_sock.close()
-        self.active_connections -= 1
-        if self.active_connections < MAX_CONNECTIONS:
-            self.max_connections_reached = False
+        finally:
+            client_sock.close()
 
     def start(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind((self.host, self.port))
             s.listen(MAX_CONNECTIONS)
+            s.settimeout(1.0)
 
             print(f"Listening on {socket.gethostname()}")
 
-            while True:
-                if self.active_connections < MAX_CONNECTIONS:
+            while not self.shutdown_flag.is_set():
+                try:
                     client_sock, address = s.accept()
                     print("Accepted connection to ", address)
-                    self.active_connections += 1
                     client_handler = threading.Thread(
                         target=self.handle_client_connection, args=(client_sock,)
                     )
+                    self.client_threads.append(client_handler)
                     client_handler.start()
-                else:
-                    if not self.max_connections_reached:
-                        print("Max connections reached. Refusuing new connections")
-                        self.max_connections_reached = True
-                    time.sleep(1)
+                except socket.timeout:
+                    continue
+                except socket.error as e:
+                    print(f"Error: {e}")
+
+            s.close()
+
+            for thread in self.client_threads:
+                thread.join()
+
+            print("Server has shutdown")
 
 
 def parse_args():
